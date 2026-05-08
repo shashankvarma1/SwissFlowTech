@@ -12,34 +12,28 @@ export const supabase =
   globalForSupabase.supabase ??
   createClient<Database>(supabaseUrl, supabaseAnonKey);
 
-if (process.env.NODE_ENV !== 'production') globalForSupabase.supabase = supabase;
-
-export type ContactSubmission =
-  Database['public']['Tables']['contact_submissions']['Insert'];
-
-export type JobApplication =
-  Database['public']['Tables']['job_applications']['Insert'];
-
-export async function submitContactForm(data: ContactSubmission) {
-  const { data: result, error } = await supabase
-    .from('contact_submissions')
-    .insert([data])
-    .select();
-  return { result, error };
+if (process.env.NODE_ENV !== 'production') {
+  globalForSupabase.supabase = supabase;
 }
 
-export async function submitJobApplication(data: JobApplication) {
-  const { data: result, error } = await supabase
-    .from('job_applications')
-    .insert([data])
-    .select();
-  return { result, error };
+// Untyped client for mutations that hit TS inference issues
+
+export async function isAdmin(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from('admin_users')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+  return !!data;
 }
 
-export async function subscribeNewsletter(email: string) {
-  const { data: result, error } = await supabase
-    .from('newsletter_subscribers')
-    .insert([{ email }])
-    .select();
-  return { result, error };
+export async function submitContactForm(data: {
+  name: string;
+  email: string;
+  company?: string | null;
+  service?: string | null;
+  message: string;
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabase as any).from('contact_submissions').insert([data]).select();
 }

@@ -183,3 +183,34 @@ h1, h2, h3, h4 {
   max-width: 1180px;
   margin: 0 auto;
 }
+
+/* ─── Mobile ─── */
+@media (max-width: 768px) {
+  .section { padding: 60px 16px; }
+
+  .hide-mobile { display: none !important; }
+
+  /* Two-col grids collapse */
+  div[style*="gridTemplateColumns: 1fr 1fr"],
+  div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Nav padding */
+  nav { padding: 0 1rem !important; }
+
+  /* Cards full width */
+  .card { border-radius: 14px !important; }
+
+  /* Modals full height on mobile */
+  div[style*="maxWidth: 540"] {
+    max-height: 100vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    margin-top: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 2.2rem !important; }
+  h2 { font-size: 1.7rem !important; }
+}
