@@ -54,12 +54,21 @@ export default function Careers() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   async function handleApply(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedJob) return;
-    setStatus("loading");
-    const { error } = await submitJobApplication({ job_title: selectedJob, ...form });
-    setStatus(error ? "error" : "success");
-  }
+  e.preventDefault();
+  if (!selectedJob) return;
+  setStatus("loading");
+
+  const { error } = await submitJobApplication({ job_title: selectedJob, ...form });
+  if (error) { setStatus("error"); return; }
+
+  await fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'job', data: { job_title: selectedJob, ...form } }),
+  });
+
+  setStatus("success");
+}
 
   return (
     <main style={{ minHeight: "100vh", background: "#040810" }}>

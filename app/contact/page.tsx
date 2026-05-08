@@ -25,11 +25,20 @@ export default function Contact() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setStatus("loading");
-    const { error } = await submitContactForm(form);
-    setStatus(error ? "error" : "success");
-  }
+  e.preventDefault();
+  setStatus("loading");
+
+  const { error } = await submitContactForm(form);
+  if (error) { setStatus("error"); return; }
+
+  await fetch('/api/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'contact', data: form }),
+  });
+
+  setStatus("success");
+}
 
   return (
     <main style={{ minHeight: "100vh", background: "#040810" }}>

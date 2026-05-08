@@ -1,36 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from './database.types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// Singleton pattern — prevents multiple GoTrueClient instances
-const globalForSupabase = globalThis as unknown as { supabase: ReturnType<typeof createClient> };
+const globalForSupabase = globalThis as unknown as {
+  supabase: ReturnType<typeof createClient<Database>>;
+};
 
 export const supabase =
-  globalForSupabase.supabase ?? createClient(supabaseUrl, supabaseAnonKey);
+  globalForSupabase.supabase ??
+  createClient<Database>(supabaseUrl, supabaseAnonKey);
 
 if (process.env.NODE_ENV !== 'production') globalForSupabase.supabase = supabase;
 
-// Types
-export interface ContactSubmission {
-  id?: string;
-  name: string;
-  email: string;
-  company?: string;
-  service?: string;
-  message: string;
-  created_at?: string;
-}
+export type ContactSubmission =
+  Database['public']['Tables']['contact_submissions']['Insert'];
 
-export interface JobApplication {
-  id?: string;
-  job_title: string;
-  applicant_name: string;
-  email: string;
-  linkedin_url?: string;
-  cover_letter?: string;
-  created_at?: string;
-}
+export type JobApplication =
+  Database['public']['Tables']['job_applications']['Insert'];
 
 export async function submitContactForm(data: ContactSubmission) {
   const { data: result, error } = await supabase
