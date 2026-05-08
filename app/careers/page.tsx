@@ -92,6 +92,7 @@ const { error } = await (supabase as any).from("applications").insert([{
     if (error) { setStatus("error"); return; }
 
     // Notify admin
+    // Notify admin
     await fetch("/api/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -107,6 +108,19 @@ const { error } = await (supabase as any).from("applications").insert([{
       }),
     });
 
+    // Confirm to candidate
+    await fetch("/api/notify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "application_confirmation",
+        data: {
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || "",
+          job_title: selectedJob.title,
+        },
+      }),
+    });
     setStatus("success");
   }
 

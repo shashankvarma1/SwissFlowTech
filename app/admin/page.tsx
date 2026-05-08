@@ -35,6 +35,30 @@ type Contact = {
   created_at: string;
 };
 
+type Job = {
+  id: string;
+  title: string;
+  department: string | null;
+  type: string | null;
+  location: string | null;
+  salary: string | null;
+  description: string | null;
+  requirements: string[] | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+type JobForm = {
+  title: string;
+  department: string;
+  type: string;
+  location: string;
+  salary: string;
+  description: string;
+  requirements: string;
+  is_active: boolean;
+};
+
 const STATUS_OPTIONS = ["applied", "reviewing", "interview", "offer", "rejected"];
 const STATUS_COLORS: Record<string, string> = {
   applied:   "#60a5fa",
@@ -46,15 +70,25 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function Admin() {
   const router = useRouter();
-  const [authed, setAuthed]           = useState(false);
-  const [loading, setLoading]         = useState(true);
-  const [tab, setTab]                 = useState<"applications" | "contacts">("applications");
+
+  const [authed, setAuthed]             = useState(false);
+  const [loading, setLoading]           = useState(true);
+  const [tab, setTab]                   = useState<"applications" | "contacts" | "jobs">("applications");
   const [applications, setApplications] = useState<Application[]>([]);
-  const [contacts, setContacts]       = useState<Contact[]>([]);
-  const [expanded, setExpanded]       = useState<string | null>(null);
-  const [notes, setNotes]             = useState<Record<string, string>>({});
-  const [saving, setSaving]           = useState<string | null>(null);
-  const [filter, setFilter]           = useState("all");
+  const [contacts, setContacts]         = useState<Contact[]>([]);
+  const [jobs, setJobs]                 = useState<Job[]>([]);
+  const [expanded, setExpanded]         = useState<string | null>(null);
+  const [notes, setNotes]               = useState<Record<string, string>>({});
+  const [saving, setSaving]             = useState<string | null>(null);
+  const [filter, setFilter]             = useState("all");
+  const [jobModal, setJobModal]         = useState(false);
+  const [editingJob, setEditingJob]     = useState<Job | null>(null);
+  const [jobSaving, setJobSaving]       = useState(false);
+  const [jobForm, setJobForm]           = useState<JobForm>({
+    title: "", department: "", type: "Remote",
+    location: "Hyderabad / Remote", salary: "",
+    description: "", requirements: "", is_active: true,
+  });
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -67,7 +101,7 @@ export default function Admin() {
   }, [router]);
 
   async function fetchData() {
-    const [appsRes, contactsRes] = await Promise.all([
+    const [appsRes, contactsRes, jobsRes] = await Promise.all([
       supabase
         .from("applications")
         .select("*, profiles(full_name,email,phone,linkedin_url), job_postings(title,department)")
@@ -76,11 +110,16 @@ export default function Admin() {
         .from("contact_submissions")
         .select("*")
         .order("created_at", { ascending: false }),
+      supabase
+        .from("job_postings")
+        .select("*")
+        .order("created_at", { ascending: false }),
     ]);
 
     const apps = (appsRes.data as Application[]) || [];
     setApplications(apps);
     setContacts((contactsRes.data as Contact[]) || []);
+    setJobs((jobsRes.data as Job[]) || []);
 
     const n: Record<string, string> = {};
     apps.forEach(a => { n[a.id] = a.admin_notes || ""; });
@@ -88,7 +127,7 @@ export default function Admin() {
     setLoading(false);
   }
 
-async function updateStatus(id: string, status: string) {
+  async function updateStatus(id: string, status: string) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from("applications").update({ status }).eq("id", id);
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
@@ -129,6 +168,73 @@ async function updateStatus(id: string, status: string) {
     window.open(resumeUrl, "_blank");
   }
 
+  function openNewJob() {
+    setEditingJob(null);
+    setJobForm({
+      title: "", department: "", type: "Remote",
+      location: "Hyderabad / Remote", salary: "",
+      description: "", requirements: "", is_active: true,
+    });
+    setJobModal(true);
+  }
+
+  function openEditJob(job: Job) {
+    setEditingJob(job);
+    setJobForm({
+      title:        job.title,
+      department:   job.department || "",
+      type:         job.type || "Remote",
+      location:     job.location || "",
+      salary:       job.salary || "",
+      description:  job.description || "",
+      requirements: (job.requirements || []).join(", "),
+      is_active:    job.is_active,
+    });
+    setJobModal(true);
+  }
+
+  async function saveJob(e: React.FormEvent) {
+    e.preventDefault();
+    setJobSaving(true);
+    const payload = {
+      title:        jobForm.title,
+      department:   jobForm.department || null,
+      type:         jobForm.type || null,
+      location:     jobForm.location || null,
+      salary:       jobForm.salary || null,
+      description:  jobForm.description || null,
+      requirements: jobForm.requirements
+        ? jobForm.requirements.split(",").map(r => r.trim()).filter(Boolean)
+        : [],
+      is_active: jobForm.is_active,
+    };
+
+    if (editingJob) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("job_postings").update(payload).eq("id", editingJob.id);
+      setJobs(prev => prev.map(j => j.id === editingJob.id ? { ...j, ...payload } : j));
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any).from("job_postings").insert([payload]).select().single();
+      if (data) setJobs(prev => [data as Job, ...prev]);
+    }
+
+    setJobSaving(false);
+    setJobModal(false);
+  }
+
+  async function toggleJobActive(id: string, is_active: boolean) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from("job_postings").update({ is_active }).eq("id", id);
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, is_active } : j));
+  }
+
+  async function deleteJob(id: string) {
+    if (!confirm("Delete this job posting? This cannot be undone.")) return;
+    await supabase.from("job_postings").delete().eq("id", id);
+    setJobs(prev => prev.filter(j => j.id !== id));
+  }
+
   const fmt = (d: string) =>
     new Date(d).toLocaleString("en-IN", {
       timeZone: "Asia/Kolkata",
@@ -154,14 +260,9 @@ async function updateStatus(id: string, status: string) {
         borderBottom: "1px solid rgba(99,179,237,0.1)",
         background: "rgba(3,6,15,0.92)",
         backdropFilter: "blur(20px)",
-        padding: "0 2rem",
-        height: 64,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
+        padding: "0 2rem", height: 64,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 50,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
@@ -195,17 +296,17 @@ async function updateStatus(id: string, status: string) {
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: "1rem", marginBottom: 32 }}>
           {[
-            { label: "Total",     value: applications.length,                                       color: "#60a5fa" },
-            { label: "Reviewing", value: applications.filter(a => a.status === "reviewing").length, color: "#fbbf24" },
-            { label: "Interview", value: applications.filter(a => a.status === "interview").length, color: "#a78bfa" },
-            { label: "Offers",    value: applications.filter(a => a.status === "offer").length,     color: "#34d399" },
-            { label: "Contacts",  value: contacts.length,                                           color: "#94a3b8" },
+            { label: "Total Apps",  value: applications.length,                                       color: "#60a5fa" },
+            { label: "Reviewing",   value: applications.filter(a => a.status === "reviewing").length, color: "#fbbf24" },
+            { label: "Interview",   value: applications.filter(a => a.status === "interview").length, color: "#a78bfa" },
+            { label: "Offers",      value: applications.filter(a => a.status === "offer").length,     color: "#34d399" },
+            { label: "Contacts",    value: contacts.length,                                           color: "#94a3b8" },
+            { label: "Job Listings",value: jobs.length,                                               color: "#fb923c" },
           ].map((s) => (
             <div key={s.label} style={{
               background: "rgba(7,13,26,0.8)",
               border: "1px solid rgba(99,179,237,0.1)",
-              borderRadius: 14,
-              padding: "1.25rem",
+              borderRadius: 14, padding: "1.25rem",
             }}>
               <div style={{ fontFamily: "Playfair Display, serif", fontSize: "2rem", fontWeight: 700, color: s.color }}>
                 {s.value}
@@ -217,7 +318,7 @@ async function updateStatus(id: string, status: string) {
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
-          {(["applications", "contacts"] as const).map((t) => (
+          {(["applications", "contacts", "jobs"] as const).map((t) => (
             <button key={t} onClick={() => setTab(t)} style={{
               padding: "8px 20px", borderRadius: 99, fontSize: "0.82rem", fontWeight: 600,
               cursor: "pointer", border: "none", fontFamily: "Plus Jakarta Sans, sans-serif",
@@ -227,7 +328,9 @@ async function updateStatus(id: string, status: string) {
             }}>
               {t === "applications"
                 ? `🧑‍💻 Applications (${applications.length})`
-                : `📬 Contacts (${contacts.length})`}
+                : t === "contacts"
+                ? `📬 Contacts (${contacts.length})`
+                : `💼 Job Listings (${jobs.length})`}
             </button>
           ))}
         </div>
@@ -252,7 +355,7 @@ async function updateStatus(id: string, status: string) {
           </div>
         )}
 
-        {/* Applications */}
+        {/* ── Applications ── */}
         {tab === "applications" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {filtered.length === 0 && (
@@ -262,8 +365,7 @@ async function updateStatus(id: string, status: string) {
               <div key={app.id} style={{
                 background: "rgba(7,13,26,0.8)",
                 border: "1px solid rgba(99,179,237,0.1)",
-                borderRadius: 20,
-                overflow: "hidden",
+                borderRadius: 20, overflow: "hidden",
               }}>
                 <div
                   style={{ padding: "1.25rem 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, cursor: "pointer" }}
@@ -342,11 +444,8 @@ async function updateStatus(id: string, status: string) {
                         </a>
                       )}
                       {app.resume_url && (
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => getResumeLink(app.resume_url!)}
-                          style={{ padding: "7px 16px", borderRadius: 8, fontSize: "0.8rem" }}
-                        >
+                        <button className="btn btn-primary" onClick={() => getResumeLink(app.resume_url!)}
+                          style={{ padding: "7px 16px", borderRadius: 8, fontSize: "0.8rem" }}>
                           📄 View Resume {app.resume_filename ? `(${app.resume_filename})` : ""}
                         </button>
                       )}
@@ -364,19 +463,14 @@ async function updateStatus(id: string, status: string) {
                     <div>
                       <div style={{ color: "#475569", fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>Admin Notes</div>
                       <textarea
-                        className="input"
-                        rows={3}
+                        className="input" rows={3}
                         placeholder="Internal notes about this candidate..."
                         value={notes[app.id] || ""}
                         onChange={(e) => setNotes({ ...notes, [app.id]: e.target.value })}
                         style={{ resize: "vertical", marginBottom: 8 }}
                       />
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => saveNotes(app.id)}
-                        disabled={saving === app.id}
-                        style={{ padding: "7px 18px", borderRadius: 8, fontSize: "0.8rem" }}
-                      >
+                      <button className="btn btn-primary" onClick={() => saveNotes(app.id)} disabled={saving === app.id}
+                        style={{ padding: "7px 18px", borderRadius: 8, fontSize: "0.8rem" }}>
                         {saving === app.id ? "Saving..." : "Save Notes"}
                       </button>
                     </div>
@@ -387,7 +481,7 @@ async function updateStatus(id: string, status: string) {
           </div>
         )}
 
-        {/* Contacts */}
+        {/* ── Contacts ── */}
         {tab === "contacts" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {contacts.length === 0 && (
@@ -397,8 +491,7 @@ async function updateStatus(id: string, status: string) {
               <div key={c.id} style={{
                 background: "rgba(7,13,26,0.8)",
                 border: "1px solid rgba(99,179,237,0.1)",
-                borderRadius: 16,
-                overflow: "hidden",
+                borderRadius: 16, overflow: "hidden",
               }}>
                 <div
                   style={{ padding: "1.25rem 1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, cursor: "pointer" }}
@@ -449,8 +542,7 @@ async function updateStatus(id: string, status: string) {
                         {c.message}
                       </div>
                     </div>
-                    <a href={`mailto:${c.email}`}
-                      className="btn btn-primary"
+                    <a href={`mailto:${c.email}`} className="btn btn-primary"
                       style={{ padding: "7px 16px", borderRadius: 8, fontSize: "0.8rem", textDecoration: "none", display: "inline-flex" }}>
                       ✉️ Reply to {c.name}
                     </a>
@@ -460,7 +552,158 @@ async function updateStatus(id: string, status: string) {
             ))}
           </div>
         )}
+
+        {/* ── Job Listings ── */}
+        {tab === "jobs" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h2 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, fontSize: "1.2rem" }}>
+                Job Listings ({jobs.length})
+              </h2>
+              <button className="btn btn-primary" onClick={openNewJob}
+                style={{ padding: "9px 20px", borderRadius: 10, fontSize: "0.85rem" }}>
+                + Post New Job
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              {jobs.length === 0 && (
+                <p style={{ color: "#475569", textAlign: "center", padding: "3rem" }}>No job postings yet.</p>
+              )}
+              {jobs.map((job) => (
+                <div key={job.id} style={{
+                  background: "rgba(7,13,26,0.8)",
+                  border: `1px solid ${job.is_active ? "rgba(99,179,237,0.15)" : "rgba(99,99,99,0.15)"}`,
+                  borderRadius: 16, padding: "1.25rem 1.5rem",
+                  display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12,
+                  opacity: job.is_active ? 1 : 0.55,
+                  transition: "opacity 0.2s",
+                }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                      <h3 style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, fontSize: "1rem" }}>
+                        {job.title}
+                      </h3>
+                      <span style={{
+                        fontSize: "0.68rem", fontWeight: 700, padding: "2px 10px", borderRadius: 99,
+                        background: job.is_active ? "rgba(5,150,105,0.12)" : "rgba(100,100,100,0.12)",
+                        color: job.is_active ? "#34d399" : "#94a3b8",
+                        border: `1px solid ${job.is_active ? "rgba(5,150,105,0.25)" : "rgba(100,100,100,0.2)"}`,
+                      }}>
+                        {job.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {[job.department, job.type, job.location, job.salary].filter(Boolean).map((t) => (
+                        <span key={t} style={{
+                          fontSize: "0.72rem", color: "#94a3b8",
+                          background: "rgba(148,163,184,0.08)", border: "1px solid rgba(148,163,184,0.12)",
+                          padding: "2px 10px", borderRadius: 99,
+                        }}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button className="btn btn-ghost" onClick={() => toggleJobActive(job.id, !job.is_active)}
+                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: "0.78rem" }}>
+                      {job.is_active ? "Deactivate" : "Activate"}
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => openEditJob(job)}
+                      style={{ padding: "6px 14px", borderRadius: 8, fontSize: "0.78rem" }}>
+                      ✏️ Edit
+                    </button>
+                    <button onClick={() => deleteJob(job.id)} style={{
+                      padding: "6px 14px", borderRadius: 8, fontSize: "0.78rem",
+                      background: "rgba(220,38,38,0.1)", border: "1px solid rgba(220,38,38,0.2)",
+                      color: "#f87171", cursor: "pointer", fontFamily: "Plus Jakarta Sans, sans-serif",
+                    }}>
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Job Modal ── */}
+      {jobModal && (
+        <div
+          style={{ position: "fixed", inset: 0, zIndex: 100, background: "rgba(3,6,15,0.88)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" }}
+          onClick={() => setJobModal(false)}
+        >
+          <div
+            style={{ background: "#070d1a", border: "1px solid rgba(99,179,237,0.2)", borderRadius: 24, padding: "2.5rem", maxWidth: 580, width: "100%", maxHeight: "90vh", overflowY: "auto" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ fontFamily: "Playfair Display, serif", fontWeight: 800, fontSize: "1.4rem", marginBottom: 24 }}>
+              {editingJob ? "Edit Job Posting" : "Post New Job"}
+            </h2>
+            <form onSubmit={saveJob}>
+              {[
+                { label: "Job Title *",  key: "title",      placeholder: "Senior Full-Stack Engineer" },
+                { label: "Department",   key: "department", placeholder: "Engineering" },
+                { label: "Location",     key: "location",   placeholder: "Hyderabad / Remote" },
+                { label: "Salary Range", key: "salary",     placeholder: "₹15L – ₹25L" },
+              ].map((f) => (
+                <div key={f.key} style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 600, marginBottom: 6 }}>{f.label}</label>
+                  <input className="input" type="text" placeholder={f.placeholder}
+                    required={f.key === "title"}
+                    value={jobForm[f.key as keyof JobForm] as string}
+                    onChange={(e) => setJobForm({ ...jobForm, [f.key]: e.target.value })} />
+                </div>
+              ))}
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 600, marginBottom: 6 }}>Type</label>
+                <select className="input" value={jobForm.type} onChange={(e) => setJobForm({ ...jobForm, type: e.target.value })}>
+                  {["Remote", "Hybrid", "On-site"].map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: "block", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 600, marginBottom: 6 }}>Description</label>
+                <textarea className="input" rows={3} placeholder="Role description..."
+                  value={jobForm.description}
+                  onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
+                  style={{ resize: "vertical" }} />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: "block", color: "#94a3b8", fontSize: "0.78rem", fontWeight: 600, marginBottom: 6 }}>
+                  Requirements <span style={{ color: "#475569", fontWeight: 400 }}>(comma separated)</span>
+                </label>
+                <textarea className="input" rows={2} placeholder="React, TypeScript, Node.js, PostgreSQL"
+                  value={jobForm.requirements}
+                  onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })}
+                  style={{ resize: "vertical" }} />
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+                <input type="checkbox" id="is_active" checked={jobForm.is_active}
+                  onChange={(e) => setJobForm({ ...jobForm, is_active: e.target.checked })}
+                  style={{ width: 16, height: 16, cursor: "pointer" }} />
+                <label htmlFor="is_active" style={{ color: "#94a3b8", fontSize: "0.85rem", cursor: "pointer" }}>
+                  Active (visible on careers page)
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn btn-primary" type="submit" disabled={jobSaving}
+                  style={{ flex: 1, padding: "12px", borderRadius: 10 }}>
+                  {jobSaving ? "Saving..." : editingJob ? "Save Changes" : "Post Job →"}
+                </button>
+                <button type="button" className="btn btn-ghost" onClick={() => setJobModal(false)}
+                  style={{ padding: "12px 20px", borderRadius: 10 }}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

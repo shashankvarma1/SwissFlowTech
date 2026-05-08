@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -25,13 +26,15 @@ export const metadata: Metadata = {
     url: "https://swissflowtech.vercel.app",
     siteName: "Swiss Flow Tech",
     title: "Swiss Flow Tech — Web & AI Solutions",
-    description: "Building scalable web apps, AI platforms, and digital experiences. Based in Hyderabad, India.",
+    description:
+      "Building scalable web apps, AI platforms, and digital experiences. Based in Hyderabad, India.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Swiss Flow Tech" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Swiss Flow Tech — Web & AI Solutions",
-    description: "Building scalable web apps, AI platforms, and digital experiences. Based in Hyderabad, India.",
+    description:
+      "Building scalable web apps, AI platforms, and digital experiences. Based in Hyderabad, India.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -56,7 +59,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <Analytics />
+      </body>
     </html>
   );
 }
