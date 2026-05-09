@@ -66,44 +66,69 @@ export default function Careers() {
 
     let resume_url = null;
     let resume_filename = null;
+    let resume_path = null;
 
     if (form.resume) {
-      const ext = form.resume.name.split(".").pop();
+      const ext  = form.resume.name.split(".").pop();
       const path = `${session.user.id}/${selectedJob.id}.${ext}`;
+      resume_path = path;
+
       const { error: uploadError } = await supabase.storage
         .from("resumes")
-        .upload(path, form.resume, { upsert: true });
-      if (uploadError) { setStatus("error"); return; }
-      const { data: urlData } = await supabase.storage.from("resumes").createSignedUrl(path, 60 * 60 * 24 * 365);
-      resume_url = urlData?.signedUrl || null;
+        .upload(path, form.resume, { upsert: true, contentType: form.resume.type });
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        setStatus("error");
+        return;
+      }
+
+      // Use a long-lived signed URL (1 year)
+      const { data: urlData, error: urlError } = await supabase.storage
+        .from("resumes")
+        .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+      if (urlError || !urlData?.signedUrl) {
+        console.error("URL error:", urlError);
+        setStatus("error");
+        return;
+      }
+
+      resume_url      = urlData.signedUrl;
       resume_filename = form.resume.name;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { error } = await (supabase as any).from("applications").insert([{
-      job_id: selectedJob.id,
-      user_id: session.user.id,
-      cover_letter: form.cover_letter || null,
+    const { error } = await (supabase as any).from("applications").insert([{
+      job_id:          selectedJob.id,
+      user_id:         session.user.id,
+      cover_letter:    form.cover_letter || null,
       resume_url,
       resume_filename,
     }]);
 
+    console.log("Insert result:", { error });
     if (error?.code === "23505") { setStatus("duplicate"); return; }
-    if (error) { setStatus("error"); return; }
+    if (error) { console.error("Insert error:", error); setStatus("error"); return; }
+    console.log("Application inserted successfully");
 
-    // Notify admin
-    // Notify admin
+    const applicantName = session.user.user_metadata?.full_name || session.user.email || "Candidate";
+
+    // Notify admin with resume link
     await fetch("/api/notify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         type: "job",
         data: {
-          job_title: selectedJob.title,
-          applicant_name: session.user.user_metadata?.full_name || session.user.email,
-          email: session.user.email,
+          job_title:      selectedJob.title,
+          applicant_name: applicantName,
+          email:          session.user.email,
           resume_url,
-          cover_letter: form.cover_letter,
+          resume_path,
+          resume_filename,
+          cover_letter:   form.cover_letter || "—",
+          portal_url:     `${process.env.NEXT_PUBLIC_SITE_URL}/admin`,
         },
       }),
     });
@@ -115,12 +140,14 @@ const { error } = await (supabase as any).from("applications").insert([{
       body: JSON.stringify({
         type: "application_confirmation",
         data: {
-          email: session.user.email,
-          name: session.user.user_metadata?.full_name || "",
+          email:     session.user.email,
+          name:      applicantName,
           job_title: selectedJob.title,
         },
       }),
     });
+
+    console.log("Notify calls complete");
     setStatus("success");
   }
 

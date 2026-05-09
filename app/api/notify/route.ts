@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import { NextRequest, NextResponse } from "next/server";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const ADMIN  = "swissflowtech@gmail.com";
+const ADMIN  = "varma.shashank20@gmail.com";
 const SITE   = process.env.NEXT_PUBLIC_SITE_URL || "https://swissflowtech.vercel.app";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -63,11 +63,26 @@ export async function POST(req: NextRequest) {
             <tr><td style="padding:8px;color:#64748b;width:130px">Position</td><td style="padding:8px;font-weight:600">${data.job_title}</td></tr>
             <tr style="background:#f1f5f9"><td style="padding:8px;color:#64748b">Name</td><td style="padding:8px">${data.applicant_name}</td></tr>
             <tr><td style="padding:8px;color:#64748b">Email</td><td style="padding:8px"><a href="mailto:${data.email}" style="color:#2563eb">${data.email}</a></td></tr>
-            <tr style="background:#f1f5f9"><td style="padding:8px;color:#64748b">Resume</td><td style="padding:8px">${data.resume_url ? `<a href="${data.resume_url}" style="color:#2563eb">View Resume</a>` : "—"}</td></tr>
+            <tr style="background:#f1f5f9"><td style="padding:8px;color:#64748b">Resume File</td><td style="padding:8px">${data.resume_filename || "—"}</td></tr>
             <tr><td style="padding:8px;color:#64748b;vertical-align:top">Cover Letter</td><td style="padding:8px">${data.cover_letter || "—"}</td></tr>
           </table>
-          <p style="margin-top:20px">
-            <a href="${SITE}/admin" style="background:#1d4ed8;color:white;padding:10px 20px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block">
+
+          ${data.resume_url ? `
+          <div style="margin:24px 0;padding:16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px">
+            <p style="margin:0 0 10px;font-weight:600;color:#1d4ed8">📄 Resume Attached</p>
+            <a href="${data.resume_url}"
+               style="background:#1d4ed8;color:white;padding:10px 20px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block">
+              Download / View Resume (${data.resume_filename || "file"})
+            </a>
+            <p style="margin:10px 0 0;font-size:0.75rem;color:#64748b">
+              Link valid for 1 year. If expired, view from the admin dashboard.
+            </p>
+          </div>
+          ` : `<p style="color:#64748b">No resume uploaded.</p>`}
+
+          <p style="margin-top:16px">
+            <a href="${data.portal_url || SITE + "/admin"}"
+               style="background:#6d28d9;color:white;padding:10px 20px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block">
               View in Admin Dashboard →
             </a>
           </p>
@@ -77,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     if (type === "welcome") {
       await resend.emails.send({
-        from: "Swiss Flow Tech <onboarding@resend.dev>",
+        from: "Swiss Flow Tech <noreply@yourdomain.com>",
         to: data.email,
         subject: "Welcome to Swiss Flow Tech! 👋",
         html: base(`
