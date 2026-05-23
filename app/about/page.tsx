@@ -175,7 +175,7 @@ export default function About() {
               discipline and care as the finest Swiss engineering.&rdquo;
             </div>
             <div style={{ marginTop: 20, color: "#4a5a7a", fontSize: "0.85rem" }}>
-              — Lucas Müller, CEO
+              — Shashank Varma, CEO
             </div>
           </div>
         </div>
