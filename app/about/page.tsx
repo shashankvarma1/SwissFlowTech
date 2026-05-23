@@ -3,32 +3,18 @@ import Footer from "../components/Footer";
 
 const team = [
   {
-    name: "Lucas Müller",
+    name: "Shashank Varma",
     role: "CEO & Co-Founder",
-    bio: "Previously engineering lead at Zurich-based fintech. 10+ years shipping SaaS products.",
+    bio: "Thriving and result-driven CEO with excellent leadership skills",
     avatar: "LM",
     color: "#2563eb",
   },
   {
-    name: "Ananya Sharma",
+    name: "Vineeth Gongati",
     role: "CTO & Co-Founder",
     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",
     avatar: "AS",
     color: "#7c3aed",
-  },
-  {
-    name: "Marco Gentile",
-    role: "Head of Design",
-    bio: "Award-winning UX designer with a background in Swiss typography and interaction design.",
-    avatar: "MG",
-    color: "#0891b2",
-  },
-  {
-    name: "Priya Nair",
-    role: "Head of Engineering",
-    bio: "Full-stack architect specializing in Next.js, Supabase, and distributed systems.",
-    avatar: "PN",
-    color: "#059669",
   },
 ];
 

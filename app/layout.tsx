@@ -17,13 +17,13 @@ export const metadata: Metadata = {
     "SaaS development",
     "Swiss Flow Tech",
   ],
-  authors: [{ name: "Swiss Flow Tech", url: "https://swissflowtech.vercel.app" }],
+  authors: [{ name: "Swiss Flow Tech", url: "www.swissflowtech.com" }],
   creator: "Swiss Flow Tech",
-  metadataBase: new URL("https://swissflowtech.vercel.app"),
+  metadataBase: new URL("https://www.swissflowtech.com"),
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://swissflowtech.vercel.app",
+    url: "https://www.swissflowtech.com",
     siteName: "Swiss Flow Tech",
     title: "Swiss Flow Tech — Web & AI Solutions",
     description:
