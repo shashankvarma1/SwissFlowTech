@@ -20,118 +20,102 @@ export default function Navbar() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase?.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser({ email: session.user.email! });
-        const a = await isAdmin(session.user.id);
-        setAdmin(a);
+        setAdmin(await isAdmin(session.user.id));
       }
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase?.auth.onAuthStateChange(async (_e, session) => {
       if (session?.user) {
         setUser({ email: session.user.email! });
-        const a = await isAdmin(session.user.id);
-        setAdmin(a);
-      } else {
-        setUser(null);
-        setAdmin(false);
-      }
-    });
+        setAdmin(await isAdmin(session.user.id));
+      } else { setUser(null); setAdmin(false); }
+    }) || { data: { subscription: { unsubscribe: () => {} } } };
 
     return () => subscription.unsubscribe();
   }, []);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabase?.auth.signOut();
     router.push("/");
   }
 
   return (
     <nav style={{
       position: "sticky", top: 0, zIndex: 50,
-      borderBottom: "1px solid rgba(99,179,237,0.1)",
-      background: "rgba(3,6,15,0.92)",
+      borderBottom: "1px solid var(--border)",
+      background: "rgba(250,250,248,0.92)",
       backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
     }}>
       <div style={{
-        maxWidth: 1200, margin: "0 auto",
-        padding: "0 2rem", height: 68,
+        maxWidth: 1180, margin: "0 auto",
+        padding: "0 2rem", height: 64,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 9,
-            background: "linear-gradient(135deg,#1d4ed8,#6d28d9)",
+            width: 32, height: 32, borderRadius: 8,
+            background: "var(--text-1)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 800, color: "white", fontFamily: "Playfair Display, serif", fontSize: 17,
+            fontWeight: 700, color: "var(--bg)", fontFamily: "var(--font-display)", fontSize: 16,
           }}>S</div>
-          <span style={{ fontFamily: "Playfair Display, serif", fontWeight: 700, fontSize: "1.05rem", color: "#eef2ff" }}>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "1.05rem", color: "var(--text-1)", letterSpacing: "-0.01em" }}>
             Swiss Flow Tech
           </span>
         </Link>
 
-        {/* Desktop links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1.75rem" }} className="nav-links">
+        {/* Desktop nav */}
+        <div style={{ display: "flex", alignItems: "center", gap: "2rem" }} className="nav-links">
           {links.map((l) => (
             <Link key={l.href} href={l.href} style={{
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "0.88rem", fontWeight: 500,
-              color: pathname === l.href ? "#60a5fa" : "#94a3b8",
+              fontFamily: "var(--font-body)", fontSize: "0.875rem", fontWeight: 500,
+              color: pathname === l.href ? "var(--text-1)" : "var(--text-2)",
               textDecoration: "none", transition: "color 0.2s",
+              borderBottom: pathname === l.href ? "1px solid var(--text-1)" : "1px solid transparent",
+              paddingBottom: 2,
             }}>
               {l.label}
             </Link>
           ))}
         </div>
 
-        {/* Right side actions */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }} className="nav-links">
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }} className="nav-links">
           {!loading && (
             <>
               {user ? (
                 <>
                   {admin && (
                     <Link href="/admin">
-                      <button className="btn btn-ghost" style={{ padding: "7px 16px", borderRadius: 9, fontSize: "0.82rem" }}>
-                        🛡️ Admin
+                      <button className="btn btn-ghost" style={{ padding: "6px 14px", borderRadius: 7, fontSize: "0.82rem" }}>
+                        Admin
                       </button>
                     </Link>
                   )}
                   <Link href="/portal">
-                    <button className="btn btn-ghost" style={{ padding: "7px 16px", borderRadius: 9, fontSize: "0.82rem" }}>
+                    <button className="btn btn-ghost" style={{ padding: "6px 14px", borderRadius: 7, fontSize: "0.82rem" }}>
                       My Portal
                     </button>
                   </Link>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={handleLogout}
-                    style={{ padding: "7px 16px", borderRadius: 9, fontSize: "0.82rem" }}
-                  >
+                  <button className="btn btn-ghost" onClick={handleLogout} style={{ padding: "6px 14px", borderRadius: 7, fontSize: "0.82rem" }}>
                     Logout
                   </button>
                 </>
               ) : (
                 <>
                   <Link href="/auth">
-                    <button className="btn btn-ghost" style={{ padding: "7px 18px", borderRadius: 9, fontSize: "0.88rem" }}>
-                      Sign In
-                    </button>
+                    <button className="btn btn-ghost" style={{ padding: "6px 16px", borderRadius: 7 }}>Sign In</button>
                   </Link>
                   <Link href="/auth?redirect=/admin">
-                    <button className="btn btn-ghost" style={{
-                      padding: "7px 18px", borderRadius: 9, fontSize: "0.88rem",
-                      borderColor: "rgba(109,40,217,0.4)", color: "#a78bfa",
-                    }}>
-                      🛡️ Admin
-                    </button>
+                    <button className="btn btn-ghost" style={{ padding: "6px 16px", borderRadius: 7, color: "var(--accent)" }}>Admin</button>
                   </Link>
                   <Link href="/contact">
-                    <button className="btn btn-primary" style={{ padding: "8px 20px", borderRadius: 9, fontSize: "0.88rem" }}>
-                      Get Started →
-                    </button>
+                    <button className="btn btn-primary" style={{ padding: "7px 18px", borderRadius: 7 }}>Get Started →</button>
                   </Link>
                 </>
               )}
@@ -139,43 +123,32 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="nav-mobile-btn"
-          style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 22, display: "none" }}
-        >
+        {/* Mobile burger */}
+        <button onClick={() => setOpen(!open)} className="nav-mobile-btn"
+          style={{ background: "none", border: "none", color: "var(--text-2)", cursor: "pointer", fontSize: 20, display: "none" }}>
           {open ? "✕" : "☰"}
         </button>
       </div>
 
       {/* Mobile menu */}
       {open && (
-        <div style={{
-          borderTop: "1px solid rgba(99,179,237,0.1)",
-          padding: "1rem 2rem",
-          display: "flex", flexDirection: "column", gap: "1rem",
-          background: "rgba(3,6,15,0.98)",
-        }}>
+        <div style={{ borderTop: "1px solid var(--border)", padding: "1.25rem 2rem", background: "var(--bg)", display: "flex", flexDirection: "column", gap: "1rem" }}>
           {links.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} style={{
-              fontFamily: "Plus Jakarta Sans, sans-serif",
-              fontSize: "1rem", color: "#94a3b8", textDecoration: "none",
-            }}>
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} style={{ fontFamily: "var(--font-body)", fontSize: "1rem", color: "var(--text-2)", textDecoration: "none" }}>
               {l.label}
             </Link>
           ))}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, borderTop: "1px solid rgba(99,179,237,0.08)" }}>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             {user ? (
               <>
-                {admin && <Link href="/admin" onClick={() => setOpen(false)} style={{ color: "#a78bfa", textDecoration: "none", fontSize: "0.9rem" }}>🛡️ Admin Dashboard</Link>}
-                <Link href="/portal" onClick={() => setOpen(false)} style={{ color: "#60a5fa", textDecoration: "none", fontSize: "0.9rem" }}>My Portal</Link>
-                <button onClick={handleLogout} style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", textAlign: "left", fontSize: "0.9rem", padding: 0 }}>Logout</button>
+                {admin && <Link href="/admin" onClick={() => setOpen(false)} style={{ color: "var(--accent)", textDecoration: "none", fontSize: "0.9rem" }}>Admin Dashboard</Link>}
+                <Link href="/portal" onClick={() => setOpen(false)} style={{ color: "var(--text-2)", textDecoration: "none", fontSize: "0.9rem" }}>My Portal</Link>
+                <button onClick={handleLogout} style={{ background: "none", border: "none", color: "var(--text-2)", cursor: "pointer", textAlign: "left", fontSize: "0.9rem", padding: 0, fontFamily: "var(--font-body)" }}>Logout</button>
               </>
             ) : (
               <>
-                <Link href="/auth" onClick={() => setOpen(false)} style={{ color: "#60a5fa", textDecoration: "none", fontSize: "0.9rem" }}>Sign In</Link>
-                <Link href="/auth?redirect=/admin" onClick={() => setOpen(false)} style={{ color: "#a78bfa", textDecoration: "none", fontSize: "0.9rem" }}>🛡️ Admin Login</Link>
+                <Link href="/auth" onClick={() => setOpen(false)} style={{ color: "var(--accent)", textDecoration: "none", fontSize: "0.9rem" }}>Sign In</Link>
+                <Link href="/auth?redirect=/admin" onClick={() => setOpen(false)} style={{ color: "var(--text-2)", textDecoration: "none", fontSize: "0.9rem" }}>Admin Login</Link>
               </>
             )}
           </div>
