@@ -2,11 +2,9 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const team = [
-  { name: "Lucas Müller",  role: "CEO & Co-Founder",     bio: "Previously engineering lead at Zurich-based fintech. 10+ years shipping SaaS products.",                     avatar: "LM" },
-  { name: "Ananya Sharma", role: "CTO & Co-Founder",     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",                       avatar: "AS" },
-  { name: "Marco Gentile", role: "Head of Design",       bio: "Award-winning UX designer with a background in Swiss typography and interaction design.",                    avatar: "MG" },
-  { name: "Priya Nair",    role: "Head of Engineering",  bio: "Full-stack architect specialising in Next.js, Supabase, and distributed systems.",                           avatar: "PN" },
-];
+  { name: "Shashank Varma",  role: "CEO & Co-Founder",     bio: "Thriving and results-driven CEO",                     avatar: "LM" },
+  { name: "Vineeth Gongati", role: "CTO & Co-Founder",     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",                       avatar: "AS" },
+  ];
 
 const values = [
   { icon: "🎯", title: "Precision",     desc: "Every decision is intentional. We obsess over details — from system architecture to pixel alignment." },
