@@ -2,8 +2,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const team = [
-  { name: "Shashank Varma",  role: "CEO & Co-Founder",     bio: "Thriving and results-driven CEO",                     avatar: "LM" },
-  { name: "Vineeth Gongati", role: "CTO & Co-Founder",     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",                       avatar: "AS" },
+  { name: "Shashank Varma",  role: "CEO & Co-Founder",     bio: "Thriving and results-driven CEO",                     avatar: "SV" },
+  { name: "Vineeth Gongati", role: "CTO & Co-Founder",     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",                       avatar: "VG" },
   ];
 
 const values = [
