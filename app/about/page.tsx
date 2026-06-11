@@ -2,7 +2,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 const team = [
-  { name: "Shashank Varma",  role: "Co-Founder",     bio: "Thriving and results-driven Co-Founder",                     avatar: "SV" },
+  { name: "Lakshmi",  role: "Co-Founder",     bio: "Thriving and results-driven Co-Founder",                     avatar: "L" },
   { name: "Vineeth Gongati", role: "CTO & Co-Founder",     bio: "ML researcher turned builder. Led AI infrastructure teams at two Series-B startups.",                       avatar: "VG" },
   ];
 
@@ -47,7 +47,7 @@ export default function About() {
             <p style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 600, color: "var(--text-1)", lineHeight: 1.5, fontStyle: "italic" }}>
               &ldquo;Great software isn&apos;t just written — it&apos;s crafted with the same discipline and care as the finest precision engineering.&rdquo;
             </p>
-            <p style={{ marginTop: 20, color: "var(--text-3)", fontSize: "0.82rem" }}>— Shashank Varma, Co-Founder</p>
+            <p style={{ marginTop: 20, color: "var(--text-3)", fontSize: "0.82rem" }}>— Lakshmi, Co-Founder</p>
           </div>
         </div>
       </section>
